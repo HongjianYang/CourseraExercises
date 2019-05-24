@@ -63,17 +63,86 @@ Theta2_grad = zeros(size(Theta2));
 %
 
 
+% PART1: compute the cost
+% Add the bias term to X, X now has the dimension 5000 * 401
+X = [ones(size(X,1), 1) X];
+% Get Z1, z1 has dimension 5000 * 25
+z1 = X * Theta1';
+% Get the activation from the hidden layer
+a1 = sigmoid(z1);
+% Add the biase term to a1, a1 has dimension 5000 * 26
+a1 = [ones(size(a1, 1), 1) a1];
+% Get z2, z2 has dimension 5000 * 10
+z2 = a1 * Theta2';
+% Get the output, h has dimension 5000 * 10
+h = sigmoid(z2);
+
+% Map vector y to a matrix of 5000 * 10 to compute cost function
+yhat = zeros(m, num_labels);
+for i = 1:m
+    yhat(i, y(i)) = 1;
+end
+
+% Compute the cost of the neural network
+% Firstly, compute cost for one single input
+one = ones(m, num_labels);
+difference = -yhat .* log(h) - ( one - yhat ) .* log( one - h );
+% Then, sum these costs together
+sum_one = sum(difference');
+J = sum(sum_one');
+J = J / m;
 
 
+% PART2: Regulatized Cost Function
+reg_theta1 = Theta1(:, 2: size(Theta1, 2));
+reg_theta2 = Theta2(:, 2: size(Theta2, 2));
 
+% Compute the sum of theta1 squared
+sum_theta1 = sum(sum(reg_theta1 .^ 2)');
+sum_theta2 = sum(sum(reg_theta2 .^ 2)');
 
+% Compute the regulatization term
+regularized = lambda / (2 * m) * (sum_theta1 + sum_theta2);
 
+% Sum up the unregularized cost function and regularization term
+J = J + regularized;
 
+% Part 3: Compute the unregularized gradient
+for i = 1:m
+    partial_h = h(i,:)';
+    partial_y = yhat(i,:)';
+    partial_z = z1(i,:)';
+    % Compute the delta in the output layer, dimension of diff3: 10 * 1
+    diff3 = partial_h - partial_y;
+    
+    % Compute the delta in the second layer, dimension of diff: 25 * 1
+    intermediate = Theta2' * diff3;
 
+    diff2 = intermediate(2: size(intermediate, 1), 1) .* sigmoidGradient(partial_z);
+    
+    % Accrue the error, dimension of Theta1_grad: 25 * 401
+    Theta1_grad = Theta1_grad + diff2 * X(i, :);
+    % Dimension of Theta2_grad: 10 * 26
+    Theta2_grad = Theta2_grad + diff3 * a1(i, :);
+end
+% This is the error term for the second layer
+Theta1_grad = Theta1_grad / m;
+% This is the error term for the third layer
+Theta2_grad = Theta2_grad / m;
 
+% Part 4: Compute the regularized gradient descent
+% The first column can't be penalized as they are the bias neurons
+temp1 = Theta1_grad(:, 2:input_layer_size + 1);
+temp2 = Theta2_grad(:, 2:hidden_layer_size + 1);
 
+% Add the regulatization term to the gradient
+temp1 = temp1 + (lambda / m) * reg_theta1;
+temp2 = temp2 + (lambda / m) * reg_theta2;
 
+% Update the gradients
 
+Theta1_grad(:, 2:input_layer_size + 1) = temp1;
+Theta2_grad(:, 2:hidden_layer_size + 1) = temp2;
 
 
 
