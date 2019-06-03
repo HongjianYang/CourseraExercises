@@ -19,8 +19,24 @@ grad = zeros(size(theta));
 %               You should set J to the cost and grad to the gradient.
 %
 
+% First step: Compute the unregulatized cost function
+% Compute the hypothesis
+h = X * theta;
+J = sum((h - y) .^ 2) / ( 2 * m );
 
+% Next, add the regularization term
+partial_theta = theta(2: size(theta, 1), : );
+reg_term = sum(partial_theta .^ 2) * lambda / ( 2 * m );
+J = J + reg_term;
 
+% Then, compute the unregularized gradient
+% Dimension of X: 12 * 2, dimension: (h - y): 12 * 1
+grad = X' * (h - y) / m;
+
+% Finally, compute the regularized gradient
+temp = grad(2: size(grad, 1), :);
+temp = temp + (lambda / m) * partial_theta;
+grad(2: size(grad, 1), :) = temp;
 
 
 
